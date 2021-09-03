@@ -33,8 +33,10 @@ H0p = H1/Ks1;                           % Get the deepwater waveheight without f
 [Hb, db] = break_params(H0p, H0, L0, T, atand(m));
 
 if d2 > db % Wave does not break before d2, calculate wave characteristics and particle movement at d2
-    [L2, C2, ~, Cg2, theta2, Ks2, ~, H2, e, F] = wave_params(H0, T, d2, theta0);    % Calculate the wave parameters at d_1
+    [L2, C2, ~, Cg2, theta2, Ks2, Kr2, H2, e, F] = wave_params(H0, T, d2, theta0);    % Calculate the wave parameters at d_1
     E = e * L2;                                                                     % Calculate energy per unit crest width [J/m]
+    H02 = H2 / Ks2 / Kr2;
+    H02p = H02 * Kr2;
     [Sx, Sz, u, w, ax, az] = wave_particles(H2, T, d2, z2);                         % Calculate particle movements
 else % Wave breaks before d2
     disp("Wave breaks before d2. Wave characteristics at d2 not calculated")
