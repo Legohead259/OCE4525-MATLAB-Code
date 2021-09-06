@@ -18,10 +18,12 @@
 % @return w:    Maximum vertical velocities [m/s]
 % @return ax:   Maximum horizontal accelerations [m/s/s]
 % @return ax:   Maximum vertical accelerations [m/s/s]
-% @return Kp:   Pressure reduction factor underneath wave
+% @return Kp:   Pressure reduction factor underneath wave at depth
+% @return Pd:   Maximum dynamic pressure underneath wave [Pa]
+% @return Ph:   Maximum hydrostatic pressure underneath wave [Pa]
 % @return P:    Pressure underneath wave [Pa]
 % @return z:    Water depth [m]
-function [Sx, Sz, u, w, ax, az, Kp, P, z] = wave_particles(H, T, h, z, g, rho)
+function [Sx, Sz, u, w, ax, az, Kp, Pd, Ph, P, z] = wave_particles(H, T, h, z, g, rho)
     arguments
         % TODO: Argument validation
         H
@@ -37,24 +39,28 @@ function [Sx, Sz, u, w, ax, az, Kp, P, z] = wave_particles(H, T, h, z, g, rho)
     
     if z == 1 % Check if a specific depth was specified or not
         z = linspace(0, -h, 10); % Generate 10 equal partitions through the water column
-        for i=1:length(z)                                           % Iterate through each depth
-            Sx(i) = -H/2 * cosh(k*(h+z(i)))/sinh(k*h);              % Calculate max x-displacement
-            Sz(i) = H/2 * sinh(k*(h+z(i)))/sinh(k*h);               % Calculate max z-displacement
-            u(i) = H/2 * g*k/sigma * cosh(k*(h+z(i)))/cosh(k*h);    % Calculate maximum x velocity
-            w(i) = H/2 * g*k/sigma * sinh(k*(h+z(i)))/cosh(k*h);    % Calculate maximum z velocity
-            ax(i) = H/2 * g*k * cosh(k*(h+z(i)))/cosh(k*h);         % Calculate maxium x acceleration
-            az(i) = -H/2 * g*k * sinh(k*(h+z(i)))/cosh(k*h);        % Calculate maxium z acceleration
-            Kp(i) = cosh(k*(h+z(i)))/cosh(k*h);                     % Calculate pressure response factor
-            P(i) = rho*g*H/2*Kp(i) - rho*g*z(i);                    % Calculate hydro pressure
+        for i=1:length(z)                                         % Iterate through each depth
+            Sx(i) = -H/2 * cosh(k*(h+z(i)))/sinh(k*h);            % Calculate max x-displacement
+            Sz(i) = H/2 * sinh(k*(h+z(i)))/sinh(k*h);             % Calculate max z-displacement
+            u(i) = H/2 * g*k/sigma * cosh(k*(h+z(i)))/cosh(k*h);  % Calculate maximum x velocity
+            w(i) = H/2 * g*k/sigma * sinh(k*(h+z(i)))/cosh(k*h);  % Calculate maximum z velocity
+            ax(i) = H/2 * g*k * cosh(k*(h+z(i)))/cosh(k*h);       % Calculate maxium x acceleration
+            az(i) = -H/2 * g*k * sinh(k*(h+z(i)))/cosh(k*h);      % Calculate maxium z acceleration
+            Kp(i) = cosh(k*(h+z(i)))/cosh(k*h);                   % Calculate pressure response factor
+            Pd(i) = rho*g*H/2*Kp(i);                              % Calculate maximum hydrodynamic pressure
+            Ph(i) = -rho*g*z(i);                                  % Calculate maximum hydrostatic pressure
+            P(i) = Pd(i) + Ph(i);                                 % Calculate total maximum pressure
         end
     else
-        Sx = -H/2 * cosh(k*(h+z))/sinh(k*h);              % Calculate max x-displacement
-        Sz = H/2 * sinh(k*(h+z))/sinh(k*h);               % Calculate max z-displacement
-        u = H/2 * g*k/sigma * cosh(k*(h+z))/cosh(k*h);    % Calculate maximum x velocity
-        w = H/2 * g*k/sigma * sinh(k*(h+z))/cosh(k*h);    % Calculate maximum z velocity
-        Kp = cosh(k*(h+z))/cosh(k*h);                     % Calculate pressure response factor
-        ax = H/2 * g*k * cosh(k*(h+z))/cosh(k*h);         % Calculate maxium x acceleration
-        az = -H/2 * g*k * sinh(k*(h+z))/cosh(k*h);        % Calculate maxium z acceleration
-        P = rho*g*H/2*Kp - rho*g*z;                       % Calculate hydro pressure
+        Sx = -H/2 * cosh(k*(h+z))/sinh(k*h);            % Calculate max x-displacement
+        Sz = H/2 * sinh(k*(h+z))/sinh(k*h);             % Calculate max z-displacement
+        u = H/2 * g*k/sigma * cosh(k*(h+z))/cosh(k*h);  % Calculate maximum x velocity
+        w = H/2 * g*k/sigma * sinh(k*(h+z))/cosh(k*h);  % Calculate maximum z velocity
+        ax = H/2 * g*k * cosh(k*(h+z))/cosh(k*h);       % Calculate maxium x acceleration
+        az = -H/2 * g*k * sinh(k*(h+z))/cosh(k*h);      % Calculate maxium z acceleration
+        Kp = cosh(k*(h+z))/cosh(k*h);                   % Calculate pressure response factor
+        Pd = rho*g*H/2*Kp;                              % Calculate maximum hydrodynamic pressure
+        Ph = -rho*g*z;                                  % Calculate maximum hydrostatic pressure
+        P = Pd + Ph;                                    % Calculate total maximum pressure
     end
 end

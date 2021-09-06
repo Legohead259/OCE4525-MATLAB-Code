@@ -15,7 +15,7 @@
 % @return theta:    design wave shore angle in degrees (°)
 % @return H:        design wave height in meters (m)
 % @return E:        design wave energy in Joules (J)
-% @return F:        design wave energy flux in Joules/sq. meter (J/m^2)
+% @return F:        design wave energy flux in Watts/meter (W/m)
 function [L, C, n, Cg, theta, Ks, Kr, H, E, F] = wave_params(H0, T, h, theta0, rho, g)
     arguments
         % TODO: Argument validation
