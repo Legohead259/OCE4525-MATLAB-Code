@@ -18,30 +18,26 @@ alphas = [0, 30, 45];   % deep water wave angles [deg]
 m = 1/20;               % beach slope
 beta = atand(m);        % beach slope [deg]
 
-L_arr = zeros(length(periods), length(alphas));         % Instantiate matrix of wavelengths
-H0p_arr = zeros(length(periods), length(alphas));       % Instantiate matrix of unrefracted deepwater wave heights
-Hd_arr = zeros(length(periods), length(alphas));        % Instantiate matrix of wave heights at specified water depth
-alpha_arr = zeros(length(periods), length(alphas));     % Instantiate matrix of wave angles
-db_arr = zeros(length(periods), length(alphas));        % Instantiate matrix of breaking water depths (CEM method)
-Hb_arr = zeros(length(periods), length(alphas));        % Instantiate matrix of breaking wave heights (CEM method)
+super_col_names = {'α=0°', 'α=30°', 'α=45°'};
+col_names = {'T=8s', 'T=16s'};
+row_names = {'Wavelength [m]', 'Unrefracted H0 [m]', 'Design Wave Height [m]', 'Design Wave Angle [deg]', ...
+                'Breaking Water Depth (CEM) [m]', 'Breaking Wave Height (CEM) [m]'};
+result_table = table('RowNames', row_names);
 
 for a=1:length(alphas) % For every angle
+    parta_table = table();
     for T=1:length(periods) % For every wave period
-        [L_arr(T,a), ~, ~, ~, alpha_arr(T,a), ~, Kr, Hd_arr(T,a)] = wave_params(H0, periods(T), d, alphas(a));  % Calculate wavelength, wave angle, and wave height
-        H0p_arr(T,a) = Kr * H0;                                                                                 % Calculate unrefracted deepwater wave height
-        L0 = dispersion(periods(T), d);                                                                         % Calculate deepwater wavelength
-        [db_arr(T,a), Hb_arr(T,a)] = break_params(H0p_arr(T,a), H0, L0, periods(T), beta);                      % Calculate breaking water depth and breaking wave height
+        [L, ~, ~, ~, alpha, ~, Kr, H] = wave_params(H0, periods(T), d, alphas(a));  % Calculate wavelength, wave angle, and wave height
+        H0p = Kr * H0;                                                              % Calculate unrefracted deepwater wave height
+        L0 = dispersion(periods(T), d);                                             % Calculate deepwater wavelength
+        [db, Hb] = break_params(H0p, H0, L0, periods(T), beta);            % Calculate breaking water depth and breaking wave height
+        parta_table = addvars(parta_table, [L; H0p; H; alpha; db; Hb], 'NewVariableNames', col_names{T});
     end
+    parta_table = mergevars(parta_table, 1:length(periods), 'NewVariableName', super_col_names{a}, 'MergeAsTable', true);
+    result_table = [result_table, parta_table];
 end
 
-outputTable = {length(alphas)};
-for i=1:length(alphas) % For every angle, create a corresponding table
-    outputTable{i} = table(L_arr(:, i), H0p_arr(:, i), Hd_arr(:, i), alpha_arr(:, i), db_arr(:, i), Hb_arr(:, i));
-    outputTable{i}.Properties.VariableNames = {'Wavelength [m]', 'Unrefracted H0 [m]', 'Wave height at d [m]', ...
-                                                'Wave angle at d [deg]', 'Breaking water depth [m]', 'Breaking wave height [m]'};
-    % Display
-    disp(outputTable{i})
-end
+disp(result_table)
 
 %% Part B
 % Depth from Wavelength Observations: Aerial photographs of a coastline display the presence of two wave systems, 
