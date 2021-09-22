@@ -9,11 +9,11 @@ g = 9.81;       % m/s^2
 rho_sw = 1025;  % kg/m^3
 
 % User Parameters
-d1 = 6;        % Depth at position 1 - m
-H1 = 1.5;         % Wave height at d_1 - m
-theta1 = 0;    % Wave angle at d_1 - deg rel to shore
-T = 12;         % Wave period - s
-m = 1/50;       % Bottom slope
+d1 = 10;        % Depth at position 1 - m
+H1 = 3;         % Wave height at d_1 - m
+theta1 = 45;    % Wave angle at d_1 - deg rel to shore
+T = 8;         % Wave period - s
+m = 0;       % Bottom slope
 d2 = 5;         % Depth at position 2 - m
 z2 = -2.5;      % Depth below SWL at position 2 - m
 
