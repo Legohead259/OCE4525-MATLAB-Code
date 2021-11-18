@@ -27,8 +27,8 @@ url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter";
 id = "8722670";
 name = "West Palm Beach, Atlantic Ocean, FL";
 units = "metric";
-bdate = "20210825"; % Beginning date - YYYYMMDD
-edate = "20210924"; % End date - YYYYMMDD
+bdate = "20211018"; % Beginning date - YYYYMMDD
+edate = "20211117"; % End date - YYYYMMDD
 datum = "mllw"; % Reference datum for measurements
 interval = "6"; % Time between measurements - minutes
 
