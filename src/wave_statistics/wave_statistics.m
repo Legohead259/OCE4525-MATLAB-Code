@@ -31,25 +31,33 @@ for i=start_year:end_year % For every historical year on the station
     fclose(fid);                    % Close the data file
 end
 
-% Download current buoy data
-try
-    url = sprintf("https://www.ndbc.noaa.gov/data/realtime2/%s.txt", station_id);
-    request = webread(url);
-catch
-    disp("Failed to download buoy data. Check data connection!")
-end
+% Download current buoy data - CREATES BROKEN DATA FILE
+% try
+%     url = sprintf("https://www.ndbc.noaa.gov/data/realtime2/%s.txt", station_id);
+%     request = webread(url);
+% catch
+%     disp("Failed to download buoy data. Check data connection!")
+% end
 
-fn = sprintf("%s/%sh%d.txt", station_id, station_id, end_year+1);
-fid = fopen(fn, 'w');
-fprintf(fid, "%s", request);
-fclose(fid);
+% fn = sprintf("%s/%sh%d.txt", station_id, station_id, end_year+1);
+% fid = fopen(fn, 'w');
+% fprintf(fid, "%s", request);
+% fclose(fid);
 
 %% Import Data
-% TODO: Support the YYMMDDHH date format
 fn = sprintf("%s/%s_data_%d_%d.csv", station_id, station_id, 2005, end_year);
 if ~isfile(fn) % If the data table is not saved, then process all of the data and save it
     buoy_data = table();
-    for i=2005:end_year % For every year between the start and end year
+    for i=start_year:1998 % For every year between the start year and 1998 - In 1999, the file format changed
+        disp(i)
+        buoy_data = vertcat(buoy_data, import_old_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
+    end
+    for i=1999:2004 % For every year between 1999 and 2004 - In 2005, the file format changed
+        disp(i)
+        buoy_data = vertcat(buoy_data, import_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
+    end
+    for i=2005:end_year % For every year between 2005 and end year
+        disp(i)
         buoy_data = vertcat(buoy_data, import_ndbc_data(sprintf("%s/%sh%02d.txt", station_id, station_id, i))); % Combine the buoy tables together
     end
     buoy_data(ismember(buoy_data.WVHT,99.0),:)=[];
@@ -62,7 +70,7 @@ end
 figure
     subplot(3,1,1)
 %     plot(buoy_data.DATE, buoy_data.WVHT) % Plot water levels over time
-    plot(buoy_data.YYMMDDHhMm, buoy_data.WVHT) % Plot water levels over time
+    plot(buoy_data.Time, buoy_data.WVHT) % Plot water levels over time
     title("Raw Wave Heights")
     ylabel("Wave Heights [m]")
     subplot(3,1,2)
@@ -72,7 +80,7 @@ figure
     xlabel("Wave Heights [m]")
     ylabel("# of Occurances")
     subplot(3,1,3)
-    plot(buoy_data.YYMMDDHhMm, buoy_data.WTMP) % Plot water temperature over time
+    plot(buoy_data.Time, buoy_data.WTMP) % Plot water temperature over time
     title("Water Temperature Over Time")
     ylabel("Water Temperature [°C]")
     
