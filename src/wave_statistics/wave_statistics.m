@@ -45,24 +45,23 @@ end
 % fclose(fid);
 
 %% Import Data
-fn = sprintf("%s/%s_data_%d_%d.csv", station_id, station_id, 2005, end_year);
+fn = sprintf("%s/%s_data_%d_%d.csv", station_id, station_id, start_year, end_year);
 if ~isfile(fn) % If the data table is not saved, then process all of the data and save it
     buoy_data = table();
     for i=start_year:1998 % For every year between the start year and 1998 - In 1999, the file format changed
-        disp(i)
         buoy_data = vertcat(buoy_data, import_old_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
     end
     for i=1999:2004 % For every year between 1999 and 2004 - In 2005, the file format changed
-        disp(i)
         buoy_data = vertcat(buoy_data, import_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
     end
     for i=2005:end_year % For every year between 2005 and end year
-        disp(i)
         buoy_data = vertcat(buoy_data, import_ndbc_data(sprintf("%s/%sh%02d.txt", station_id, station_id, i))); % Combine the buoy tables together
     end
     buoy_data(ismember(buoy_data.WVHT,99.0),:)=[];
     buoy_data(ismember(buoy_data.WTMP,999.0),:)=[];
-%     buoy_data = standardizeMissing(buoy_data, {999 99}); % Filter out unacceptable values
+    writetable(buoy_data, fn)
+else
+    buoy_data = readtable(fn);
 end
 
 %% Display Surface and Histogram
