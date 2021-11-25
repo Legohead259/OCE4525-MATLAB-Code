@@ -7,10 +7,19 @@ close all; clear all;
 
 %% Download data
 % Historical data
-start_year = 1988;
-end_year = 2020;
-N_years = end_year - start_year + 1;
 station_id = "41009"; % NOAA NDBC station number
+
+switch station_id
+    case "41009" % Port Canaveral offshore
+        loc = "20 NM NE of Port Canaveral, FL";
+        start_year = 1988;
+        end_year = 2020;
+    case "41113" % Port Canaveral nearshore
+        loc = "Cape Canaveral, FL";
+        start_year = 2006;
+        end_year = 2020;
+end
+N_years = end_year - start_year + 1;
 
 for i=start_year:end_year % For every historical year on the station
     fn = sprintf("%s/%sh%d.txt", station_id, station_id, i);
@@ -48,14 +57,21 @@ end
 fn = sprintf("%s/%s_data_%d_%d.csv", station_id, station_id, start_year, end_year);
 if ~isfile(fn) % If the data table is not saved, then process all of the data and save it
     buoy_data = table();
-    for i=start_year:1998 % For every year between the start year and 1998 - In 1999, the file format changed
-        buoy_data = vertcat(buoy_data, import_old_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
-    end
-    for i=1999:2004 % For every year between 1999 and 2004 - In 2005, the file format changed
-        buoy_data = vertcat(buoy_data, import_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
-    end
-    for i=2005:end_year % For every year between 2005 and end year
-        buoy_data = vertcat(buoy_data, import_ndbc_data(sprintf("%s/%sh%02d.txt", station_id, station_id, i))); % Combine the buoy tables together
+    switch station_id
+        case "41009" % Port Canaveral Offshore
+            for i=start_year:1998 % For every year between the start year and 1998 - In 1999, the file format changed
+                buoy_data = vertcat(buoy_data, import_old_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
+            end
+            for i=1999:2004 % For every year between 1999 and 2004 - In 2005, the file format changed
+                buoy_data = vertcat(buoy_data, import_old_ndbc_data(sprintf("%s/%sh%02d.txt",station_id, station_id, i))); % Combine the buoy table together
+            end
+            for i=2005:end_year % For every year between 2005 and end year
+                buoy_data = vertcat(buoy_data, import_ndbc_data(sprintf("%s/%sh%02d.txt", station_id, station_id, i))); % Combine the buoy tables together
+            end
+        case "41113" % Port Canaveral nearshore
+            for i=start_year:end_year % For all data years
+                buoy_data = vertcat(buoy_data, import_ndbc_data(sprintf("%s/%sh%02d.txt", station_id, station_id, i))); % Combine the buoy tables together
+            end
     end
     buoy_data(ismember(buoy_data.WVHT,99.0),:)=[];
     buoy_data(ismember(buoy_data.WTMP,999.0),:)=[];
@@ -89,6 +105,29 @@ H_stdev = std(buoy_data.WVHT);
 N = length(buoy_data.WVHT);
 temp = sort(buoy_data.WVHT);
 H_third = mean(temp(round(2/3*length(buoy_data.WVHT)):end));
+
+%% Display Intensity Graphs
+temp_wave_data = buoy_data;
+temp_wave_data(ismember(temp_wave_data.MWD, 999),:) = [];
+
+temp_wind_data = buoy_data;
+temp_wind_data(ismember(temp_wind_data.WSP, 99),:) = [];
+
+Options.AngleNorth = 0;
+Options.AngleEast = 90;
+Options.Labels = {'N (0°)','NE (45°)','E','SE (135°)','S (180°)','SW (225°)','W (270°)','NW (315°)'};
+Options.FreqLabelAngle = 292.5;
+Options.LegendType = 1;
+Options.LabLegend = 'Wave Heights [m]';
+Options.LegendVariable = 'H_s';
+
+Options.TitleString = sprintf('Wave Intensity and Direction Probability \n NOAA Buoy ID: %s \n %s', station_id, loc);
+WindRose(temp_wave_data.MWD, temp_wave_data.WVHT, Options);
+saveas(gcf, sprintf("%s/wave_intensity_dir_%s.png", station_id, station_id))
+
+Options.TitleString = sprintf('Wind Intensity and Direction Probability \n NOAA Buoy ID: %s \n %s', station_id, loc);
+WindRose(temp_wind_data.WD, temp_wind_data.WSP, Options);
+saveas(gcf, sprintf("%s/wind_intensity_dir_%s.png", station_id, station_id))
 
 %% PDF and CDF
 % Plot the wave height probability distribution function (PDF) and cumulative 
