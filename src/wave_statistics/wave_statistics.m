@@ -75,6 +75,7 @@ if ~isfile(fn) % If the data table is not saved, then process all of the data an
     end
     buoy_data(ismember(buoy_data.WVHT,99.0),:)=[];
     buoy_data(ismember(buoy_data.WTMP,999.0),:)=[];
+    buoy_data(ismember(buoy_data.DPD,99),:)=[];
     writetable(buoy_data, fn)
 else
     buoy_data = readtable(fn);
@@ -129,6 +130,7 @@ Options.TitleString = sprintf('Wind Intensity and Direction Probability \n NOAA 
 WindRose(temp_wind_data.WD, temp_wind_data.WSP, Options);
 saveas(gcf, sprintf("%s/wind_intensity_dir_%s.png", station_id, station_id))
 
+clear temp_wave_data temp_wind_data;
 %% PDF and CDF
 % Plot the wave height probability distribution function (PDF) and cumulative 
 % distribution function (CDF) for the provided data set.
@@ -279,7 +281,49 @@ figure
     ylabel ('Wave Height (m)')
     hold off
     saveas(gcf, sprintf("%s/probability_distribution_%s.png", station_id, station_id))
+   
+% Display stats
+H50_0 = 9.5; % Deepwater 50-year wave - m
+H100_0 = 10.0; % Deepwater 100-year wave - m
+fprintf("50-year return interval wave height: %0.2f m\n", H50_0)
+fprintf("100-year return interval wave height: %0.2f m\n", H100_0)
+    
+%% Wave Shoaling
+ds = 4.7; % Design water depth - m
+fn = sprintf("%s/shoaled_data_%s.csv", station_id, station_id);
+if ~isfile(fn) % Check if the shoaling data has already been saved
+    shoaling_temp = buoy_data;
+    shoaling_temp(ismember(shoaling_temp.MWD, 999),:) = []; % Delete all rows with bad wave angles
+    shoaling_temp(shoaling_temp.MWD > 180,:) = []; % Delete all rows that do not come from the N (0°), E (90°), or S (180°)
+    shoaling_temp.MWD = shoaling_temp.MWD - 90; % Rotate wave direction reference frame 90 degrees clockwise (E=0°)
 
-% Display
-disp("The 50-year return interval wave is 9m (Weibull [k=1])")
-disp("The 100-year return interval wave is 9.5m (Weibull [k=1])")
+    deep_water_vals = table( 'Size', [0 4],...
+                            'VariableNames', ["H0", "L0", "T", "Theta0"],...
+                            'VariableTypes', ["double", "double", "double", "double"]);
+    shallow_water_vals = table( 'Size', [0 5],...
+                                'VariableNames', ["H", "L", "T", "Theta", "E"],...
+                                'VariableTypes', ["double", "double", "double", "double", "double"]);
+
+    for i = 1:size(shoaling_temp,1) % For every wave height
+        L0 = 9.81 * shoaling_temp.DPD(i)^2 / (2*pi); % Deepwater wavelength - m
+        [L, ~, ~, ~, theta, ~, ~, H, E, ~] = wave_params(shoaling_temp.WVHT(i), shoaling_temp.DPD(i), ds, shoaling_temp.MWD(i));
+
+%         deep_water_vals = [deep_water_vals; {shoaling_temp.WVHT(i), L0, shoaling_temp.DPD(i), shoaling_temp.MWD(i)}];
+        shallow_water_vals = [shallow_water_vals; {H, L, shoaling_temp.DPD(i), theta, E}];
+    end
+   
+    writetable(shallow_water_vals, fn);
+else
+    shallow_water_vals = readtable(fn);
+end
+
+shallow_water_vals.Theta = shallow_water_vals.Theta + 90; % Reorient reference frame to N=0°
+Options.TitleString = sprintf('Shoaled Wave Intensity and Direction Probability \n NOAA Buoy ID: %s \n For design water level: %0.2f m', station_id, ds);
+WindRose(shallow_water_vals.Theta, shallow_water_vals.H, Options);
+saveas(gcf, sprintf("%s/shoaled_wave_intensity_dir_%s.png", station_id, station_id))
+
+% Shoaled design waves
+[~, ~, ~, ~, ~, ~, ~, H50, ~, ~] = wave_params(H50_0, mean(buoy_data.DPD), ds, 0);
+[~, ~, ~, ~, ~, ~, ~, H100, ~, ~] = wave_params(H100_0, mean(buoy_data.DPD), ds, 0);
+fprintf("50-year return interval shoaled wave height: %0.2f m\n", H50)
+fprintf("100-year return interval shoaled wave height: %0.2f m\n", H100)
